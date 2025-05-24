@@ -1,9 +1,9 @@
-using AttendanceSystem.Models;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using AttendanceSystem.Data;
 using AttendanceSystem.Models;
 using AttendanceSystem.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using AttendanceSystem.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +11,6 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
-
-//builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
@@ -79,7 +77,7 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    //app.UseMigrationsEndPoint();
+    app.UseDeveloperExceptionPage();
 }
 else
 {
@@ -95,91 +93,49 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Configure endpoints
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllerRoute(
-        name: "default",
-        pattern: "{controller=Account}/{action=Login}/{id?}");
-    endpoints.MapRazorPages();
-});
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Account}/{action=Login}/{id?}");
+app.MapRazorPages();
 
 app.Run();
 
-public static class SeedData
+
+
+namespace AttendanceSystem.Data
 {
-    public static async Task Initialize(
-        UserManager<ApplicationUser> userManager,
-        RoleManager<IdentityRole> roleManager)
+    public static class SeedData
     {
-        // Seed roles
-        string[] roleNames = { "Admin", "Teacher", "Student" };
-
-        foreach (var roleName in roleNames)
+        public static async Task Initialize(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
         {
-            if (!await roleManager.RoleExistsAsync(roleName))
+            string[] roleNames = { "Admin", "Teacher", "Student" };
+
+            foreach (var roleName in roleNames)
             {
-                await roleManager.CreateAsync(new IdentityRole(roleName));
+                if (!await roleManager.RoleExistsAsync(roleName))
+                {
+                    await roleManager.CreateAsync(new IdentityRole(roleName));
+                }
             }
-        }
 
-        // Seed admin user
-        string adminEmail = "admin@school.com";
-        string adminPassword = "Admin@123";
-
-        if (await userManager.FindByEmailAsync(adminEmail) == null)
-        {
-            var adminUser = new ApplicationUser
+            // Create a default admin user
+            var adminEmail = "admin@example.com";
+            var adminUser = await userManager.FindByEmailAsync(adminEmail);
+            if (adminUser == null)
             {
-                UserName = adminEmail,
-                Email = adminEmail,
-                FullName = "Administrator"
-            };
+                var user = new ApplicationUser
+                {
+                    UserName = "admin",
+                    Email = adminEmail,
+                    EmailConfirmed = true
+                };
 
-            var createAdmin = await userManager.CreateAsync(adminUser, adminPassword);
-            if (createAdmin.Succeeded)
-            {
-                await userManager.AddToRoleAsync(adminUser, "Admin");
-            }
-        }
+                var result = await userManager.CreateAsync(user, "Admin123!");
 
-        // Seed sample teacher
-        string teacherEmail = "teacher@school.com";
-        string teacherPassword = "Teacher@123";
-
-        if (await userManager.FindByEmailAsync(teacherEmail) == null)
-        {
-            var teacherUser = new ApplicationUser
-            {
-                UserName = teacherEmail,
-                Email = teacherEmail,
-                FullName = "Sample Teacher"
-            };
-
-            var createTeacher = await userManager.CreateAsync(teacherUser, teacherPassword);
-            if (createTeacher.Succeeded)
-            {
-                await userManager.AddToRoleAsync(teacherUser, "Teacher");
-            }
-        }
-
-        // Seed sample student
-        string studentEmail = "student@school.com";
-        string studentPassword = "Student@123";
-
-        if (await userManager.FindByEmailAsync(studentEmail) == null)
-        {
-            var studentUser = new ApplicationUser
-            {
-                UserName = studentEmail,
-                Email = studentEmail,
-                FullName = "Sample Student"
-            };
-
-            var createStudent = await userManager.CreateAsync(studentUser, studentPassword);
-            if (createStudent.Succeeded)
-            {
-                await userManager.AddToRoleAsync(studentUser, "Student");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(user, "Admin");
+                }
             }
         }
     }

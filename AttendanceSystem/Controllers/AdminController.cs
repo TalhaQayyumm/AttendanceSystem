@@ -1,11 +1,20 @@
-﻿using AttendanceSystem.Models;
+﻿using AttendanceSystem.Data;
+using AttendanceSystem.Models;
+using AttendanceSystem.ViewModels.Admin;
+using AttendanceSystem.ViewModels.Courses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AttendanceSystem.Data;
-using AttendanceSystem.ViewModels;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using AttendanceSystem.ViewModels.Admin;
 using AttendanceSystem.ViewModels.Courses;
+using AttendanceSystem.ViewModels.Attendance;
+using AttendanceSystem.ViewModels.Admin;
 
 namespace AttendanceSystem.Controllers
 {
@@ -29,35 +38,30 @@ namespace AttendanceSystem.Controllers
             _logger = logger;
         }
 
-        // Dashboard actions
         public async Task<IActionResult> Index()
         {
-            try
+            var stats = new DashboardViewModel
             {
-                var stats = new AdminDashboardViewModel
-                {
-                    TotalStudents = (await _userManager.GetUsersInRoleAsync("Student")).ToList(),
-                    TotalTeachers = (await _userManager.GetUsersInRoleAsync("Teacher")).ToList(),
-                    TotalCourses = await _context.Courses.CountAsync(),
-                    RecentAttendances = await _context.Attendances
-                        .OrderByDescending(a => a.Date)
-                        .Take(10)
-                        .Include(a => a.Student)
-                        .Include(a => a.Course)
-                        .ToListAsync()
-                };
-
-                return View(stats);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading admin dashboard");
-                TempData["ErrorMessage"] = "An error occurred while loading the dashboard.";
-                return RedirectToAction("Error", "Home");
-            }
+                Students = (await _userManager.GetUsersInRoleAsync("Student")).ToList(),
+                Teachers = (await _userManager.GetUsersInRoleAsync("Teacher")).ToList(),
+                CourseCount = await _context.Courses.CountAsync(),
+                RecentAttendances = await _context.Attendances
+                    .OrderByDescending(a => a.Date)
+                    .Take(10)
+                    .Include(a => a.Student)
+                    .Include(a => a.Course)
+                    .Select(a => new AttendanceRecordViewModel
+                    {
+                        Date = a.Date,
+                        Status = a.Status,
+                        StudentFullName = a.Student.FullName,
+                        CourseName = a.Course.Name
+                    })
+                    .ToListAsync()
+            };
+            return View(stats);
         }
 
-        // User Management actions
         public async Task<IActionResult> ManageUsers()
         {
             try
@@ -110,7 +114,7 @@ namespace AttendanceSystem.Controllers
                     Email = user.Email,
                     FullName = user.FullName,
                     CurrentRoles = roles.ToList(),
-                    AllRoles = allRoles.Select(r => r.Name).ToList()
+                    AvailableRoles = allRoles.Select(r => r.Name).ToList()
                 };
 
                 return View(model);
@@ -123,13 +127,17 @@ namespace AttendanceSystem.Controllers
             }
         }
 
+
+        [Authorize(Roles = "Admin")]
+
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditUser(EditUserViewModel model)
         {
             if (!ModelState.IsValid)
             {
-                model.AllRoles = (await _roleManager.Roles.ToListAsync()).Select(r => r.Name).ToList();
+                model.AvailableRoles = (await _roleManager.Roles.ToListAsync()).Select(r => r.Name).ToList();
                 return View(model);
             }
 
@@ -141,6 +149,7 @@ namespace AttendanceSystem.Controllers
                     return NotFound();
                 }
 
+                // Update user properties
                 user.Email = model.Email;
                 user.UserName = model.Email;
                 user.FullName = model.FullName;
@@ -149,16 +158,17 @@ namespace AttendanceSystem.Controllers
                 if (!updateResult.Succeeded)
                 {
                     AddErrors(updateResult);
-                    model.AllRoles = (await _roleManager.Roles.ToListAsync()).Select(r => r.Name).ToList();
+                    model.AvailableRoles = (await _roleManager.Roles.ToListAsync()).Select(r => r.Name).ToList();
                     return View(model);
                 }
 
+                // Update roles
                 var currentRoles = await _userManager.GetRolesAsync(user);
                 var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
                 if (!removeResult.Succeeded)
                 {
                     AddErrors(removeResult);
-                    model.AllRoles = (await _roleManager.Roles.ToListAsync()).Select(r => r.Name).ToList();
+                    model.AvailableRoles = (await _roleManager.Roles.ToListAsync()).Select(r => r.Name).ToList();
                     return View(model);
                 }
 
@@ -168,32 +178,73 @@ namespace AttendanceSystem.Controllers
                     if (!addResult.Succeeded)
                     {
                         AddErrors(addResult);
-                        model.AllRoles = (await _roleManager.Roles.ToListAsync()).Select(r => r.Name).ToList();
+                        model.AvailableRoles = (await _roleManager.Roles.ToListAsync()).Select(r => r.Name).ToList();
                         return View(model);
                     }
                 }
 
                 TempData["SuccessMessage"] = "User updated successfully";
-                return RedirectToAction("ManageUsers");
+                return RedirectToAction(nameof(ManageUsers));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error updating user with ID: {model.UserId}");
                 TempData["ErrorMessage"] = "An error occurred while updating the user.";
-                return RedirectToAction("EditUser", new { id = model.UserId });
+                return RedirectToAction(nameof(EditUser), new { id = model.UserId });
             }
         }
 
-        // Course Management actions
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(id);
+                if (user == null)
+                {
+                    return NotFound();
+                }
+
+                // First delete related records if needed (e.g., attendances, enrollments)
+                var userCourses = await _context.UserCourses
+                    .Where(uc => uc.UserId == id)
+                    .ToListAsync();
+                _context.UserCourses.RemoveRange(userCourses);
+
+                var attendances = await _context.Attendances
+                    .Where(a => a.StudentId == id)
+                    .ToListAsync();
+                _context.Attendances.RemoveRange(attendances);
+
+                // Then delete the user
+                var result = await _userManager.DeleteAsync(user);
+                if (!result.Succeeded)
+                {
+                    throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+                }
+
+                TempData["SuccessMessage"] = "User deleted successfully";
+                return RedirectToAction(nameof(ManageUsers));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error deleting user with ID: {id}");
+                TempData["ErrorMessage"] = "An error occurred while deleting the user.";
+                return RedirectToAction(nameof(ManageUsers));
+            }
+        }
+
         public async Task<IActionResult> ManageCourses()
         {
             try
             {
                 var courses = await _context.Courses
-                    .Include(c => c.Teacher)
+                    .Include(c => c.Teacher)  // Include the Teacher information
                     .ToListAsync();
 
-                return View(courses);
+                return View(courses);  // Pass the courses list to the view
             }
             catch (Exception ex)
             {
@@ -203,14 +254,54 @@ namespace AttendanceSystem.Controllers
             }
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        
+        [Authorize(Roles = "Admin")]
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteCourse(int id)
+        {
+            try
+            {
+                var course = await _context.Courses
+                    .Include(c => c.UserCourses)
+                    .Include(c => c.Attendances)
+                    .FirstOrDefaultAsync(c => c.CourseId == id);
+
+                if (course == null)
+                {
+                    return NotFound();
+                }
+
+                // First remove all related records
+                _context.UserCourses.RemoveRange(course.UserCourses);
+                _context.Attendances.RemoveRange(course.Attendances);
+
+                // Then remove the course
+                _context.Courses.Remove(course);
+
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Course deleted successfully";
+                return RedirectToAction(nameof(ManageCourses));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error deleting course with ID: {id}");
+                TempData["ErrorMessage"] = "An error occurred while deleting the course.";
+                return RedirectToAction(nameof(ManageCourses));
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> CreateCourse()
         {
             try
             {
-                var model = new CourseViewModel
+                var model = new CourseFormViewModel
                 {
-                    AvailableTeachers = (await _userManager.GetUsersInRoleAsync("Teacher")).ToList()
+                    Teachers = (await _userManager.GetUsersInRoleAsync("Teacher")).ToList()
                 };
                 return View(model);
             }
@@ -224,11 +315,11 @@ namespace AttendanceSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateCourse(ViewModels.CourseViewModel model)
+        public async Task<IActionResult> CreateCourse(CourseFormViewModel model)
         {
             if (!ModelState.IsValid)
             {
-                model.AvailableTeachers = (await _userManager.GetUsersInRoleAsync("Teacher")).ToList();
+                model.Teachers = (await _userManager.GetUsersInRoleAsync("Teacher")).ToList();
                 return View(model);
             }
 
@@ -239,12 +330,12 @@ namespace AttendanceSystem.Controllers
                     Name = model.Name,
                     Description = model.Description,
                     TeacherId = model.TeacherId,
-                    AllowedLatitude = model.AllowedLatitude,
-                    AllowedLongitude = model.AllowedLongitude,
-                    AllowedRadiusMeters = model.AllowedRadiusMeters,
-                    ClassStartTime = model.ClassStartTime,
-                    ClassEndTime = model.ClassEndTime,
-                    ClassDay = model.ClassDay
+                    AllowedLatitude = model.Latitude,
+                    AllowedLongitude = model.Longitude,
+                    AllowedRadiusMeters = model.RadiusMeters,
+                    ClassStartTime = model.StartTime,
+                    ClassEndTime = model.EndTime,
+                    ClassDay = model.DayOfWeek
                 };
 
                 _context.Courses.Add(course);
@@ -257,12 +348,11 @@ namespace AttendanceSystem.Controllers
             {
                 _logger.LogError(ex, "Error creating course");
                 TempData["ErrorMessage"] = "An error occurred while creating the course.";
-                model.AvailableTeachers = (await _userManager.GetUsersInRoleAsync("Teacher")).ToList();
+                model.Teachers = (await _userManager.GetUsersInRoleAsync("Teacher")).ToList();
                 return View(model);
             }
         }
 
-        // Student Enrollment actions
         [HttpGet]
         public async Task<IActionResult> EnrollStudents(int courseId)
         {
@@ -280,11 +370,11 @@ namespace AttendanceSystem.Controllers
                     .Select(uc => uc.UserId)
                     .ToListAsync();
 
-                var model = new EnrollStudentsViewModel
+                var model = new EnrollmentViewModel
                 {
                     CourseId = courseId,
                     CourseName = course.Name,
-                    Students = students.Select(s => new StudentEnrollmentViewModel
+                    Students = students.Select(s => new EnrollmentRecordViewModel
                     {
                         StudentId = s.Id,
                         StudentName = s.FullName,
@@ -304,7 +394,7 @@ namespace AttendanceSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EnrollStudents(EnrollStudentsViewModel model)
+        public async Task<IActionResult> EnrollStudents(EnrollmentViewModel model)
         {
             try
             {
@@ -357,4 +447,5 @@ namespace AttendanceSystem.Controllers
             }
         }
     }
+
 }

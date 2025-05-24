@@ -1,4 +1,7 @@
-﻿using AttendanceSystem.Models;
+﻿using AttendanceSystem.Data;
+using AttendanceSystem.Models;
+using AttendanceSystem.Services;
+using AttendanceSystem.ViewModels.Attendance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -179,12 +182,17 @@ namespace AttendanceSystem.Controllers
             var model = new AttendanceReportViewModel
             {
                 CourseName = course.Name,
-                Attendances = attendances,
+                Records = attendances.Select(a => new AttendanceRecordViewModel
+                {
+                    Date = a.Date,
+                    Status = a.Status
+                }).ToList(),
                 AttendancePercentage = percentage,
                 IsBelowMinimum = percentage < 75
             };
 
             return View(model);
         }
+
     }
 }

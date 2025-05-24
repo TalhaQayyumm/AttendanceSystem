@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using AttendanceSystem.Models;
 using System.Collections.Generic;
 
 namespace AttendanceSystem.Models

@@ -1,5 +1,4 @@
-﻿@model AttendanceSystem.ViewModels.AttendanceReportViewModel
-
+﻿@model AttendanceSystem.ViewModels.Attendance.AttendanceReportViewModel
 @{
     ViewData["Title"] = "Attendance Report";
 }
@@ -10,8 +9,8 @@
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title">Summary</h5>
-            <p>Total Classes: @Model.Attendances.Count</p>
-            <p>Present Classes: @Model.Attendances.Count(a => a.Status == AttendanceStatus.Present || a.Status == AttendanceStatus.Late)</p>
+            <p>Total Classes: @Model.Records.Count</p>
+            <p>Present Classes: @Model.Records.Count(a => a.Status == AttendanceStatus.Present || a.Status == AttendanceStatus.Late)</p>
             <p>Attendance Percentage: @Model.AttendancePercentage.ToString("0.00")%</p>
 
             @if (Model.IsBelowMinimum)
@@ -37,11 +36,11 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var attendance in Model.Attendances)
+            @foreach (var record in Model.Records)
             {
                 <tr>
-                    <td>@attendance.Date.ToShortDateString()</td>
-                    <td>@attendance.Status</td>
+                    <td>@record.Date.ToShortDateString()</td>
+                    <td>@record.Status</td>
                 </tr>
             }
         </tbody>

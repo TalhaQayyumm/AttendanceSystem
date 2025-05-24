@@ -1,11 +1,13 @@
-﻿using AttendanceSystem.Models;
+﻿using AttendanceSystem.Data;
+using AttendanceSystem.Models;
+using AttendanceSystem.ViewModels;
+using AttendanceSystem.ViewModels.Attendance;
+using AttendanceSystem.ViewModels.Courses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AttendanceSystem.Data;
-using AttendanceSystem.Models;
-using AttendanceSystem.ViewModels;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -55,10 +57,13 @@ namespace AttendanceSystem.Controllers
 
             var studentReports = course.UserCourses
                 .Select(uc => uc.User)
-                .Select(s => new StudentAttendanceReport
+                .Select(s => new StudentAttendanceReportViewModel
                 {
                     Student = s,
-                    Attendances = attendances.Where(a => a.StudentId == s.Id).OrderBy(a => a.Date).ToList(),
+                    Attendances = attendances
+                        .Where(a => a.StudentId == s.Id)
+                        .OrderBy(a => a.Date)
+                        .ToList(),
                     TotalClasses = attendances.Select(a => a.Date).Distinct().Count(),
                     PresentClasses = attendances.Count(a => a.StudentId == s.Id &&
                         (a.Status == AttendanceStatus.Present || a.Status == AttendanceStatus.Late))

@@ -1,15 +1,10 @@
-﻿using AttendanceSystem.Controllers;
-using AttendanceSystem.Models;
+﻿using AttendanceSystem.Models;
+using AttendanceSystem.ViewModels.Account;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using AttendanceSystem.Models;
-using AttendanceSystem.ViewModels;
 using System.Threading.Tasks;
-// Use these namespace imports
-using AttendanceSystem.ViewModels.Admin;
-using AttendanceSystem.ViewModels.Courses;
-using AttendanceSystem.ViewModels.Attendance;
+using AttendanceSystem.ViewModels.Account;
 
 namespace AttendanceSystem.Controllers
 {

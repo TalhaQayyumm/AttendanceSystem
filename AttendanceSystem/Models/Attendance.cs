@@ -1,18 +1,13 @@
-﻿using System;
-using AttendanceSystem.Models;
-
+﻿
 namespace AttendanceSystem.Models
 {
     public class Attendance
     {
         public int AttendanceId { get; set; }
-
         public string StudentId { get; set; }
         public ApplicationUser Student { get; set; }
-
         public int CourseId { get; set; }
         public Course Course { get; set; }
-
         public DateTime Date { get; set; }
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
