@@ -1,0 +1,109 @@
+﻿@model AttendanceSystem.ViewModels.CourseDetailsViewModel
+
+@{
+    ViewData["Title"] = "Course Details";
+}
+
+<div class="container">
+    <h2>@Model.Course.Name - Attendance</h2>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Course Information</h5>
+            <p>@Model.Course.Description</p>
+            <p>Day: @Model.Course.ClassDay</p>
+            <p>Time: @Model.Course.ClassStartTime?.ToString("hh\\:mm") - @Model.Course.ClassEndTime?.ToString("hh\\:mm")</p>
+        </div>
+    </div>
+
+    <h4>Student Attendance</h4>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Student Name</th>
+                <th>Present</th>
+                <th>Total</th>
+                <th>Percentage</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var report in Model.StudentReports)
+            {
+                var percentage = report.TotalClasses > 0 ? (double)report.PresentClasses / report.TotalClasses * 100 : 0;
+
+                <tr>
+                    <td>@report.Student.FullName</td>
+                    <td>@report.PresentClasses</td>
+                    <td>@report.TotalClasses</td>
+                    <td>@percentage.ToString("0.00")%</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" data-toggle="modal" data-target="#attendanceModal-@report.Student.Id">
+                            View Details
+                        </button>
+                    </td>
+                </tr>
+
+                <!-- Modal for each student -->
+                <div class="modal fade" id="attendanceModal-@report.Student.Id" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Attendance Details for @report.Student.FullName</h5>
+                                <button type="button" class="close" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var attendance in report.Attendances)
+                                        {
+                                            <tr>
+                                                <td>@attendance.Date.ToShortDateString()</td>
+                                                <td>@attendance.Status</td>
+                                                <td>
+                                                    <form asp-action="UpdateAttendanceStatus" method="post">
+                                                        <input type="hidden" name="attendanceId" value="@attendance.AttendanceId" />
+                                                        <select name="status" class="form-control form-control-sm">
+                                                            @foreach (var status in Enum.GetValues(typeof(AttendanceStatus)))
+                                                            {
+                                                                <option value="@status" selected="@(status.Equals(attendance.Status))">@status</option>
+                                                            }
+                                                        </select>
+                                                        <button type="submit" class="btn btn-sm btn-primary mt-1">Update</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </tbody>
+    </table>
+
+    <a asp-action="Index" class="btn btn-secondary">Back to Courses</a>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        });
+    </script>
+}

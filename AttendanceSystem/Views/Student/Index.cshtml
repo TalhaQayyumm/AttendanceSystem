@@ -1,0 +1,26 @@
+﻿@model List<AttendanceSystem.Models.UserCourse>
+
+@{
+    ViewData["Title"] = "Student Dashboard";
+}
+
+<div class="container">
+    <h2>My Courses</h2>
+
+    <div class="row">
+        @foreach (var course in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">@course.Course.Name</h5>
+                        <p class="card-text">@course.Course.Description</p>
+                        <p class="card-text"><small class="text-muted">Teacher: @course.Course.Teacher.FullName</small></p>
+                        <a asp-action="MarkAttendance" asp-route-courseId="@course.CourseId" class="btn btn-primary">Mark Attendance</a>
+                        <a asp-action="AttendanceReport" asp-route-courseId="@course.CourseId" class="btn btn-info">View Report</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

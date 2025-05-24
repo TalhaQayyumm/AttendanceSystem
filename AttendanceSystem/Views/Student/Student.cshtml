@@ -1,0 +1,42 @@
+﻿@model List<AttendanceSystem.Models.UserCourse>
+
+@{
+    ViewData["Title"] = "My Courses";
+    Layout = "_Layout";
+}
+
+<h2>My Courses</h2>
+
+@if (Model.Any())
+{
+    <table class="table table-striped">
+        <thead class="thead-dark">
+            <tr>
+                <th>Course Name</th>
+                <th>Teacher</th>
+                <th>Enrollment Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var course in Model)
+            {
+                <tr>
+                    <td>@course.Course.Name</td>
+                    <td>@course.Course.Teacher.FullName</td>
+                    <td>@course.EnrollmentDate.ToString("d")</td>
+                    <td>
+                        <a asp-controller="Student" asp-action="MarkAttendance" asp-route-courseId="@course.CourseId" class="btn btn-primary btn-sm">Mark Attendance</a>
+                        <a asp-controller="Student" asp-action="AttendanceReport" asp-route-courseId="@course.CourseId" class="btn btn-info btn-sm">View Report</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-info">
+        You are not enrolled in any courses yet.
+    </div>
+}

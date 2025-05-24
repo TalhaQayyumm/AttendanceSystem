@@ -1,0 +1,35 @@
+﻿@model List<AttendanceSystem.Models.UserCourse>
+
+<h2>My Courses</h2>
+
+@if (Model.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Course Name</th>
+                <th>Teacher</th>
+                <th>Enrollment Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var course in Model)
+            {
+                <tr>
+                    <td>@course.Course.Name</td>
+                    <td>@course.Course.Teacher.FullName</td>
+                    <td>@course.EnrollmentDate.ToString("d")</td>
+                    <td>
+                        <a asp-action="MarkAttendance" asp-route-courseId="@course.CourseId" class="btn btn-primary">Mark Attendance</a>
+                        <a asp-action="AttendanceReport" asp-route-courseId="@course.CourseId" class="btn btn-info">View Attendance</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>You are not enrolled in any courses yet.</p>
+}

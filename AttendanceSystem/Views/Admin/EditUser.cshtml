@@ -1,0 +1,47 @@
+﻿@model AttendanceSystem.ViewModels.EditUserViewModel
+
+@{
+    ViewData["Title"] = "Edit User";
+}
+
+<div class="container">
+    <h2>Edit User</h2>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <form asp-action="EditUser" method="post">
+        <input type="hidden" asp-for="UserId" />
+
+        <div class="form-group">
+            <label asp-for="FullName"></label>
+            <input asp-for="FullName" class="form-control" />
+            <span asp-validation-for="FullName" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Email"></label>
+            <input asp-for="Email" class="form-control" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label>Roles</label>
+            <div>
+                @foreach (var role in Model.AllRoles)
+                {
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="SelectedRoles" value="@role"
+                        @(Model.CurrentRoles.Contains(role) ? "checked" : "") />
+                        <label class="form-check-label">@role</label>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a asp-action="ManageUsers" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>

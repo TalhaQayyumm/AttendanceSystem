@@ -1,0 +1,76 @@
+﻿@model AttendanceSystem.ViewModels.CourseViewModel
+
+@{
+    ViewData["Title"] = "Create Course";
+}
+
+<div class="container">
+    <h2>Create Course</h2>
+
+    <form asp-action="CreateCourse" method="post">
+        <div class="form-group">
+            <label asp-for="Name"></label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Description"></label>
+            <textarea asp-for="Description" class="form-control"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="TeacherId"></label>
+            <select asp-for="TeacherId" class="form-control">
+                <option value="">-- Select Teacher --</option>
+                @foreach (var teacher in Model.AvailableTeachers)
+                {
+                    <option value="@teacher.Id">@teacher.FullName</option>
+                }
+            </select>
+            <span asp-validation-for="TeacherId" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ClassDay"></label>
+            <select asp-for="ClassDay" class="form-control" asp-items="Html.GetEnumSelectList<DayOfWeek>()">
+                <option value="">-- Select Day --</option>
+            </select>
+            <span asp-validation-for="ClassDay" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ClassStartTime"></label>
+            <input asp-for="ClassStartTime" type="time" class="form-control" />
+            <span asp-validation-for="ClassStartTime" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ClassEndTime"></label>
+            <input asp-for="ClassEndTime" type="time" class="form-control" />
+            <span asp-validation-for="ClassEndTime" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="AllowedLatitude"></label>
+            <input asp-for="AllowedLatitude" class="form-control" />
+            <span asp-validation-for="AllowedLatitude" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="AllowedLongitude"></label>
+            <input asp-for="AllowedLongitude" class="form-control" />
+            <span asp-validation-for="AllowedLongitude" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="AllowedRadiusMeters"></label>
+            <input asp-for="AllowedRadiusMeters" class="form-control" />
+            <span asp-validation-for="AllowedRadiusMeters" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Create Course</button>
+        <a asp-action="ManageCourses" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>

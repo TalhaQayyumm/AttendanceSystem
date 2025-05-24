@@ -1,0 +1,42 @@
+﻿@model List<AttendanceSystem.ViewModels.UserWithRolesViewModel>
+
+@{
+    ViewData["Title"] = "Manage Users";
+}
+
+<div class="container">
+    <h2>Manage Users</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Roles</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model)
+            {
+                <tr>
+                    <td>@user.User.FullName</td>
+                    <td>@user.User.Email</td>
+                    <td>@string.Join(", ", user.Roles)</td>
+                    <td>
+                        <a asp-action="EditUser" asp-route-id="@user.User.Id" class="btn btn-sm btn-primary">Edit</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

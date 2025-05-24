@@ -1,0 +1,51 @@
+﻿@model AttendanceSystem.ViewModels.AttendanceReportViewModel
+
+@{
+    ViewData["Title"] = "Attendance Report";
+}
+
+<div class="container">
+    <h2>Attendance Report for @Model.CourseName</h2>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Summary</h5>
+            <p>Total Classes: @Model.Attendances.Count</p>
+            <p>Present Classes: @Model.Attendances.Count(a => a.Status == AttendanceStatus.Present || a.Status == AttendanceStatus.Late)</p>
+            <p>Attendance Percentage: @Model.AttendancePercentage.ToString("0.00")%</p>
+
+            @if (Model.IsBelowMinimum)
+            {
+                <div class="alert alert-warning">
+                    Your attendance is below the minimum requirement of 75%.
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-success">
+                    Your attendance meets the minimum requirement.
+                </div>
+            }
+        </div>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var attendance in Model.Attendances)
+            {
+                <tr>
+                    <td>@attendance.Date.ToShortDateString()</td>
+                    <td>@attendance.Status</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <a asp-action="Index" class="btn btn-secondary">Back to Courses</a>
+</div>

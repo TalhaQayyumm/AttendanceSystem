@@ -1,0 +1,46 @@
+﻿@model List<AttendanceSystem.Models.Course>
+
+@{
+    ViewData["Title"] = "Manage Courses";
+}
+
+<div class="container">
+    <h2>Manage Courses</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <p>
+        <a asp-action="CreateCourse" class="btn btn-primary">Create New Course</a>
+    </p>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Course Name</th>
+                <th>Teacher</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var course in Model)
+            {
+                <tr>
+                    <td>@course.Name</td>
+                    <td>@course.Teacher?.FullName</td>
+                    <td>@course.Description</td>
+                    <td>
+                        <a asp-action="EnrollStudents" asp-route-courseId="@course.CourseId" class="btn btn-sm btn-info">Enroll Students</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

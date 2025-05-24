@@ -1,0 +1,53 @@
+﻿@model AttendanceSystem.ViewModels.MarkAttendanceViewModel
+
+@{
+    ViewData["Title"] = "Mark Attendance";
+}
+
+<div class="container">
+    <h2>Mark Attendance for @Model.CourseName</h2>
+
+    <form asp-action="MarkAttendance" method="post">
+        <input type="hidden" asp-for="CourseId" />
+        <input type="hidden" asp-for="CourseName" />
+
+        @if (Model.RequiresLocation)
+        {
+            <div class="form-group">
+                <label>Your Location</label>
+                <button type="button" id="getLocationBtn" class="btn btn-secondary">Get Current Location</button>
+                <small class="form-text text-muted">Location is required for this course.</small>
+                <input type="hidden" asp-for="Latitude" id="latitude" />
+                <input type="hidden" asp-for="Longitude" id="longitude" />
+                <div id="locationStatus" class="mt-2"></div>
+            </div>
+        }
+
+        <button type="submit" class="btn btn-primary">Submit Attendance</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('getLocationBtn').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        document.getElementById('latitude').value = position.coords.latitude;
+                        document.getElementById('longitude').value = position.coords.longitude;
+                        document.getElementById('locationStatus').innerHTML =
+                            '<div class="alert alert-success">Location captured successfully</div>';
+                    },
+                    function(error) {
+                        document.getElementById('locationStatus').innerHTML =
+                            '<div class="alert alert-danger">Error getting location: ' + error.message + '</div>';
+                    }
+                );
+            } else {
+                document.getElementById('locationStatus').innerHTML =
+                    '<div class="alert alert-danger">Geolocation is not supported by this browser.</div>';
+            }
+        });
+    </script>
+}
