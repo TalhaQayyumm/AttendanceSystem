@@ -125,15 +125,17 @@ namespace AttendanceSystem.Controllers
         }
 
         // GET: Student/AttendanceHistory
-        public async Task<IActionResult> AttendanceHistory(int courseId)
+        [Authorize(Roles = "Student")]
+        public async Task<IActionResult> AttendanceHistory()
         {
             var userId = _userManager.GetUserId(User);
             var attendances = await _context.Attendances
-                .Where(a => a.CourseId == courseId && a.StudentId == userId)
+                .Include(a => a.Course)
+                .Where(a => a.StudentId == userId)
                 .OrderByDescending(a => a.Date)
                 .ToListAsync();
 
-            return View(attendances);
+            return View(attendances); // or a ViewModel containing these records
         }
 
 

@@ -2,30 +2,25 @@
 @model List<Attendance>
 
 
-<h3>Attendance History</h3>
-@if (!Model.Any())
-{
-    <div class="alert alert-info">No attendance records found for this course.</div>
-}
-else
-{
-    <table class="table">
-        <thead>
+<h2>Attendance History</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Course</th>
+            <th>Status</th>
+            <th>Marked At</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var attendance in Model)
+        {
             <tr>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Marked At</th>
+                <td>@attendance.Date.ToShortDateString()</td>
+                <td>@attendance.Course?.Name</td>
+                <td>@attendance.Status</td>
+                <td>@attendance.MarkedAt?.ToString("g")</td>
             </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                <tr>
-                    <td>@item.Date.ToShortDateString()</td>
-                    <td>@item.Status</td>
-                    <td>@item.MarkedAt?.ToString("g")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+        }
+    </tbody>
+</table>
