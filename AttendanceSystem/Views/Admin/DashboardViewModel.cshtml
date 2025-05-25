@@ -1,44 +1,148 @@
 ﻿@model AttendanceSystem.ViewModels.Admin.DashboardViewModel
 @{
     ViewData["Title"] = "Admin Dashboard";
+    Layout = null;
 }
 
-<div class="container">
-    <h2>Admin Dashboard</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Admin Dashboard - Attendance Management System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #6EC6FF, #2A98FF);
+            min-height: 100vh;
+        }
 
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card text-white bg-primary">
-                <div class="card-body">
-                    <h5 class="card-title">Total Students</h5>
-                    <p class="card-text display-4">@Model.TotalStudents</p>
+        .dashboard-container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 40px 20px;
+        }
+
+        h2 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background-color: #2A98FF;
+            color: #fff;
+            padding: 15px 20px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 20px;
+            background-color: #fff;
+        }
+
+        .stat-card {
+            color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+            .stat-card h5 {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+
+            .stat-card .display-4 {
+                font-size: 36px;
+                font-weight: 700;
+            }
+
+        .bg-primary {
+            background-color: #2A98FF;
+        }
+
+        .bg-success {
+            background-color: #28a745;
+        }
+
+        .bg-info {
+            background-color: #17a2b8;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table thead {
+            background-color: #2A98FF;
+            color: #fff;
+        }
+
+        .table th, .table td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        .table tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .table-striped tbody tr:hover {
+            background-color: #e0f0ff;
+        }
+
+        {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h2>Admin Dashboard</h2>
+
+        <div class="row mb-4" style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: space-between;">
+            <div class="col-md-4" style="flex: 1 1 30%;">
+                <div class="stat-card bg-primary">
+                    <h5>Total Students</h5>
+                    <p class="display-4">@Model.TotalStudents</p>
+                </div>
+            </div>
+            <div class="col-md-4" style="flex: 1 1 30%;">
+                <div class="stat-card bg-success">
+                    <h5>Total Teachers</h5>
+                    <p class="display-4">@Model.TotalTeachers</p>
+                </div>
+            </div>
+            <div class="col-md-4" style="flex: 1 1 30%;">
+                <div class="stat-card bg-info">
+                    <h5>Total Courses</h5>
+                    <p class="display-4">@Model.TotalCourses</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-success">
-                <div class="card-body">
-                    <h5 class="card-title">Total Teachers</h5>
-                    <p class="card-text display-4">@Model.TotalTeachers</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-info">
-                <div class="card-body">
-                    <h5 class="card-title">Total Courses</h5>
-                    <p class="card-text display-4">@Model.TotalCourses</p>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="container">
-        <!-- ... (keep your existing dashboard header and stats cards) ... -->
-
-        <div class="card">
+        <div class="card mt-4">
             <div class="card-header">
-                <h5>Recent Attendance Records</h5>
+                Recent Attendance Records
             </div>
             <div class="card-body">
                 <table class="table table-striped">
@@ -60,8 +164,16 @@
                                 <td>@attendance.Status</td>
                             </tr>
                         }
+                        @if (!Model.RecentAttendances.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center">No recent records available.</td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+</body>
+</html>

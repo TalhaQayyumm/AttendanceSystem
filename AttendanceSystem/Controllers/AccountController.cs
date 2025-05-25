@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using AttendanceSystem.ViewModels.Account;
+using AttendanceSystem.ViewModels.Attendance;
+
 
 namespace AttendanceSystem.Controllers
 {

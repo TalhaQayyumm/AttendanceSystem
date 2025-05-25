@@ -1,0 +1,84 @@
+﻿@model AttendanceSystem.ViewModels.Attendance.StudentLocationViewModel
+@{
+    ViewData["Title"] = "Attendance Location";
+    // Use a fallback value if AllowedRadiusMeters is not present in the model
+    var allowedRadius = 100; // fallback default
+}
+
+<div class="container">
+    <h2>@Model.StudentName's Location</h2>
+    <p>Course: @Model.CourseName</p>
+    <p>Time: @Model.MarkedAt.ToString("f")</p>
+
+    <div id="map" style="height: 500px; width: 100%;"></div>
+
+    @if (Model.AllowedLatitude != null)
+    {
+        <div class="mt-3 alert alert-info">
+            Allowed location is set for this course (radius: @allowedRadius meters).
+        </div>
+    }
+
+    <a href="@Url.Action("AttendanceHistory")" class="btn btn-secondary mt-3">
+        <i class="fas fa-arrow-left"></i> Back to History
+    </a>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        #map {
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            margin-bottom: 1rem;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const location = [@Model.Latitude, @Model.Longitude];
+            const map = L.map('map').setView(location, 18);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Main location marker
+            L.marker(location)
+                .addTo(map)
+                .bindPopup(`
+                    <b>@Model.StudentName</b><br>
+                    <small>@Model.CourseName</small><br>
+        @Model.MarkedAt.ToString("f")
+                `)
+                .openPopup();
+
+            // Accuracy circle
+            L.circle(location, {
+                color: 'blue',
+                fillColor: '#30f',
+                fillOpacity: 0.2,
+                radius: 50 // 50 meter radius circle
+            }).addTo(map);
+
+            // Add allowed location if available
+        @if (Model.AllowedLatitude != null)
+        {
+            <text>
+                        const allowedLocation = [@Model.AllowedLatitude, @Model.AllowedLongitude];
+                        L.circle(allowedLocation, {
+                            color: 'green',
+                            fillColor: '#3f0',
+                            fillOpacity: 0.1,
+                            radius: @allowedRadius
+                        }).addTo(map)
+                        .bindPopup('Allowed attendance area');
+            </text>
+        }
+        });
+    </script>
+}

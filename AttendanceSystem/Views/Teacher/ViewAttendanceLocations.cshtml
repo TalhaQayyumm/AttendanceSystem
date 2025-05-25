@@ -1,0 +1,97 @@
+﻿@model List<AttendanceSystem.ViewModels.Attendance.AttendanceLocationViewModel>
+
+@{
+    ViewData["Title"] = "Attendance Locations";
+}
+
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-map-marker-alt"></i> Attendance Locations - @ViewBag.CourseName
+            </h6>
+            <div>
+                <form method="get" class="form-inline">
+                    <div class="input-group">
+                        <input type="date" name="date" value="@ViewBag.SelectedDate" class="form-control">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Distance</th>
+                                <th>Location Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                var isWithinRadius = CalculateDistance(item) <= item.AllowedRadiusMeters;
+                                var distance = CalculateDistance(item).ToString("0");
+                                var locationStatus = isWithinRadius ? "Within area" : "Outside area";
+                                var statusClass = isWithinRadius ? "text-success" : "text-danger";
+
+                                <tr>
+                                    <td>@item.StudentName</td>
+                                    <td>
+                                        <span class="badge @(item.Status == AttendanceStatus.Present ? "bg-success" :
+                                                          item.Status == AttendanceStatus.Late ? "bg-warning" : "bg-danger")">
+                                            @item.Status
+                                        </span>
+                                    </td>
+                                    <td>@item.MarkedAt.ToString("t")</td>
+                                    <td>@distance m</td>
+                                    <td class="@statusClass">@locationStatus</td>
+                                    <td>
+                                        <a href="@Url.Action("ViewStudentLocation", new { attendanceId = item.AttendanceId })"
+                                           class="btn btn-sm btn-info">
+                                            <i class="fas fa-map-marker-alt"></i> View Map
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    No attendance records with location data found for this date.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    private double CalculateDistance(AttendanceLocationViewModel item)
+    {
+        const double R = 6371000; // meters
+        double lat = item.Latitude;
+        double lon = item.Longitude;
+        double allowedLat = item.AllowedLatitude;
+        double allowedLon = item.AllowedLongitude;
+
+        var dLat = (lat - allowedLat) * Math.PI / 180;
+        var dLon = (lon - allowedLon) * Math.PI / 180;
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(allowedLat * Math.PI / 180) * Math.Cos(lat * Math.PI / 180) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return R * c;
+    }
+}

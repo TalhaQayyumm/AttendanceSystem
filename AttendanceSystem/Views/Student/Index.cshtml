@@ -1,11 +1,26 @@
-﻿@model List<AttendanceSystem.Models.UserCourse>
+﻿@model List<AttendanceSystem.Models.Course>
 
 @{
-    ViewData["Title"] = "Student Dashboard";
+    ViewData["Title"] = "My Courses";
+    Layout = "~/Views/Shared/_Layout.cshtml"; // Adjust path if your layout is in another folder
 }
 
-<div class="container">
+<div class="container mt-5 pt-5">
     <h2>My Courses</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["ErrorMessage"]
+        </div>
+    }
 
     <div class="row">
         @foreach (var course in Model)
@@ -13,11 +28,21 @@
             <div class="col-md-4 mb-4">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">@course.Course.Name</h5>
-                        <p class="card-text">@course.Course.Description</p>
-                        <p class="card-text"><small class="text-muted">Teacher: @course.Course.Teacher.FullName</small></p>
-                        <a asp-action="MarkAttendance" asp-route-courseId="@course.CourseId" class="btn btn-primary">Mark Attendance</a>
-                        <a asp-action="AttendanceReport" asp-route-courseId="@course.CourseId" class="btn btn-info">View Report</a>
+                        <h5 class="card-title">@course.Name</h5>
+                        <p class="card-text">@course.Description</p>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                @course.ClassDay @course.ClassStartTime?.ToString("hh\\:mm")-@course.ClassEndTime?.ToString("hh\\:mm")
+                            </small>
+                        </p>
+                        <a asp-action="MarkAttendance" asp-route-courseId="@course.CourseId"
+                           class="btn btn-primary">
+                            Mark Attendance
+                        </a>
+                        <a asp-action="AttendanceHistory" asp-route-courseId="@course.CourseId"
+                           class="btn btn-outline-secondary">
+                            View History
+                        </a>
                     </div>
                 </div>
             </div>

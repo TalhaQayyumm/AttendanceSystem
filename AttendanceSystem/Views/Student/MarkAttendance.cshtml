@@ -1,52 +1,196 @@
 ﻿@model AttendanceSystem.ViewModels.Attendance.MarkAttendanceViewModel
-using AttendanceSystem.ViewModels.Admin;
+
 @{
     ViewData["Title"] = "Mark Attendance";
 }
 
-<div class="container">
-    <h2>Mark Attendance for @Model.CourseName</h2>
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Mark Attendance for @Model.CourseName</h3>
+        </div>
+        <div class="card-body">
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
 
-    <form asp-action="MarkAttendance" method="post">
-        <input type="hidden" asp-for="CourseId" />
-        <input type="hidden" asp-for="CourseName" />
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Please enable location services to mark your attendance.
+            </div>
 
-        @if (Model.RequiresLocation)
-        {
-            <div class="form-group">
-                <label>Your Location</label>
-                <button type="button" id="getLocationBtn" class="btn btn-secondary">Get Current Location</button>
-                <small class="form-text text-muted">Location is required for this course.</small>
+            <div id="map" style="height: 400px; width: 100%; margin-bottom: 20px; border-radius: 8px; border: 1px solid #ddd;"></div>
+
+            <small class="text-muted d-block mb-3" id="accuracyMessage">Waiting for GPS accuracy...</small>
+
+            <form asp-action="MarkAttendance" method="post" id="attendanceForm">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="CourseId" />
+                <input type="hidden" asp-for="CourseName" />
                 <input type="hidden" asp-for="Latitude" id="latitude" />
                 <input type="hidden" asp-for="Longitude" id="longitude" />
-                <div id="locationStatus" class="mt-2"></div>
-            </div>
-        }
+                <input type="hidden" asp-for="Accuracy" id="accuracy" />
 
-        <button type="submit" class="btn btn-primary">Submit Attendance</button>
-        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-    </form>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-success btn-lg btn-block" id="submitBtn" disabled>
+                        <i class="fas fa-check-circle"></i> Submit Attendance
+                    </button>
+                </div>
+            </form>
+            <form asp-action="MarkAttendance" method="post" id="attendanceForm">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="CourseId" />
+                <input type="hidden" asp-for="CourseName" />
+                <input type="hidden" asp-for="Latitude" id="latitude" />
+                <input type="hidden" asp-for="Longitude" id="longitude" />
+                <input type="hidden" asp-for="Accuracy" id="accuracy" />
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-success btn-lg btn-block" id="submitBtn" disabled>
+                        <i class="fas fa-check-circle"></i> Submit Attendance
+                    </button>
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-primary btn-lg btn-block" id="markNowBtn">
+                        <i class="fas fa-location-arrow"></i> Mark Attendance Now
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
 </div>
 
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        #map {
+            min-height: 400px;
+        }
+    </style>
+}
+
 @section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     <script>
-        document.getElementById('getLocationBtn').addEventListener('click', function() {
+        let map, marker, circle;
+        const maxAccuracy = 1000; // Relaxed for testing
+        let watchId = null;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            map = L.map('map').setView([0, 0], 2);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        document.getElementById('latitude').value = position.coords.latitude;
-                        document.getElementById('longitude').value = position.coords.longitude;
-                        document.getElementById('locationStatus').innerHTML =
-                            '<div class="alert alert-success">Location captured successfully</div>';
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                };
+
+                watchId = navigator.geolocation.watchPosition(
+                    position => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        const acc = position.coords.accuracy;
+
+                        console.log("GPS Accuracy:", acc);
+
+                        document.getElementById('latitude').value = lat;
+                        document.getElementById('longitude').value = lng;
+                        document.getElementById('accuracy').value = acc;
+
+                        document.getElementById('accuracyMessage').textContent = `Current GPS accuracy: ${Math.round(acc)} meters`;
+
+                        map.setView([lat, lng], 18);
+
+                        if (marker) {
+                            marker.setLatLng([lat, lng]);
+                        } else {
+                            marker = L.marker([lat, lng]).addTo(map)
+                                .bindPopup("Your current location").openPopup();
+                        }
+
+                        if (circle) {
+                            circle.setLatLng([lat, lng]).setRadius(acc);
+                        } else {
+                            circle = L.circle([lat, lng], {
+                                color: 'blue',
+                                fillColor: '#30f',
+                                fillOpacity: 0.2,
+                                radius: acc
+                            }).addTo(map);
+                        }
+
+                        const btn = document.getElementById('submitBtn');
+                        if (acc <= maxAccuracy) {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Attendance';
+                        } else {
+                            btn.disabled = true;
+                            btn.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Move for better GPS signal (Accuracy: ${Math.round(acc)}m)`;
+                        }
                     },
-                    function(error) {
-                        document.getElementById('locationStatus').innerHTML =
-                            '<div class="alert alert-danger">Error getting location: ' + error.message + '</div>';
-                    }
+                    error => {
+                        console.error('Geolocation error:', error);
+                        alert('Error getting location: ' + error.message);
+                        map.setView([51.505, -0.09], 13);
+                    },
+                    options
                 );
+
+                document.getElementById('attendanceForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+
+                    const accuracy = parseFloat(document.getElementById('accuracy').value);
+                    if (accuracy > maxAccuracy) {
+                        alert('Please wait for better GPS accuracy before submitting.');
+                        return false;
+                    }
+
+                    const btn = document.getElementById('submitBtn');
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+                    const form = this;
+                    const formData = new FormData(form);
+
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                        }
+                    })
+                    .then(response => {
+                        if (response.redirected) {
+                            if (watchId) navigator.geolocation.clearWatch(watchId);
+                            window.location.href = response.url;
+                        } else {
+                            return response.text().then(text => {
+                                document.body.innerHTML = text;
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Submission failed: ' + error.message);
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Attendance';
+                    });
+                });
+
             } else {
-                document.getElementById('locationStatus').innerHTML =
-                    '<div class="alert alert-danger">Geolocation is not supported by this browser.</div>';
+                alert('Geolocation is not supported by this browser.');
+                map.setView([51.505, -0.09], 13);
             }
         });
     </script>

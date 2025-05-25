@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.Collections.Generic;
+using AttendanceSystem.ViewModels.Attendance;
 
 namespace AttendanceSystem.Models
 {

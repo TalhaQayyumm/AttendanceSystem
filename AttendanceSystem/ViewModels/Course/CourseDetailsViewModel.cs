@@ -1,19 +1,51 @@
-﻿using AttendanceSystem.Models;
-using System.Collections.Generic;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AttendanceSystem.ViewModels
 {
     public class CourseDetailsViewModel
     {
-        public Models.Course Course { get; set; } = null!;
-        public List<StudentAttendanceReportViewModel> StudentReports { get; set; } = new();
+        public Course Course { get; set; }
+        //public List<string> AttendanceStatuses { get; set; }
+
+        public List<string> AttendanceStatuses { get; set; } = new List<string>
+        {
+            "Present",
+            "Absent",
+            "Late",
+            "Excused"
+        };
+
+        public List<StudentAttendanceReport> StudentReports { get; set; }
     }
 
-    public class StudentAttendanceReportViewModel
+    [NotMapped] // Add this attribute
+    public class StudentAttendanceReport
     {
-        public Models.ApplicationUser Student { get; set; } = null!;
+        public Student Student { get; set; }
         public int PresentClasses { get; set; }
         public int TotalClasses { get; set; }
-        public List<Models.Attendance> Attendances { get; set; } = new(); // Fully qualified
+        public List<AttendanceRecord> Attendances { get; set; }
+    }
+
+    [NotMapped] // Add this attribute
+    public class AttendanceRecord
+    {
+        public int AttendanceId { get; set; }
+        public DateTime Date { get; set; }
+        public string Status { get; set; }
+    }
+
+    [NotMapped]
+    public class Course
+    {
+        public int CourseId { get; set; }
+        public string Name { get; set; }
+
+    }
+    [NotMapped]
+    public class Student
+    {
+        public int StudentId { get; set; }
+        public string FullName { get; set; }
     }
 }

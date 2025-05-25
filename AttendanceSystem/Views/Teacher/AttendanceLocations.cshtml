@@ -1,0 +1,130 @@
+﻿@model AttendanceSystem.ViewModels.Attendance.AttendanceLocationViewModel
+
+@{
+    ViewData["Title"] = "Student Attendance Location";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var status = Model.Status;
+    var allowedRadius = Model.AllowedRadiusMeters;
+    var isWithinRadius = CalculateDistance() <= allowedRadius;
+    var badgeClass = status == AttendanceStatus.Present ? "badge-success"
+                   : status == AttendanceStatus.Late ? "badge-warning"
+                   : "badge-danger";
+    var locationAlert = isWithinRadius ? "alert-success" : "alert-danger";
+    var locationStatusText = isWithinRadius ? "Within allowed area" : "Outside allowed area";
+    var distance = CalculateDistance().ToString("0");
+    var markerColor = status == AttendanceStatus.Present ? "#1cc88a"
+                   : status == AttendanceStatus.Late ? "#f6c23e"
+                   : "#e74a3b";
+}
+
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-map-marker-alt"></i> @Model.StudentName's Attendance Location
+            </h6>
+            <a href="@Url.Action("CourseDetails", new { id = ViewContext.RouteData.Values["courseId"] })"
+               class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Back to Course
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="alert alert-info">
+                        <strong>Course:</strong> @Model.CourseName<br />
+                        <strong>Time:</strong> @Model.MarkedAt.ToString("f")<br />
+                        <strong>Status:</strong>
+                        <span class="badge @badgeClass">@status</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="alert @locationAlert">
+                        <strong>Location Status:</strong> @locationStatusText<br />
+                        <strong>Distance:</strong> @distance meters from class
+                    </div>
+                </div>
+            </div>
+
+            <div id="locationMap" style="height: 500px; border-radius: 8px;"></div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <style>
+        #locationMap {
+            min-height: 400px;
+            border: 1px solid #ddd;
+        }
+
+        .leaflet-popup-content {
+            min-width: 200px;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const map = L.map('locationMap').setView(
+                [@Model.Latitude, @Model.Longitude], 16
+            );
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+
+            // Class marker
+            L.marker([@Model.AllowedLatitude, @Model.AllowedLongitude], {
+                icon: L.divIcon({
+                    className: 'custom-icon',
+                    html: '<div style="background-color:#4e73df; border:2px solid white; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; color:white;"><i class="fas fa-university"></i></div>',
+                    iconSize: [28, 28]
+                })
+            }).addTo(map)
+              .bindPopup("<b>Class Location</b>")
+              .openPopup();
+
+            // Allowed radius circle
+            L.circle([@Model.AllowedLatitude, @Model.AllowedLongitude], {
+                color: '#4e73df',
+                fillColor: '#4e73df',
+                fillOpacity: 0.1,
+                radius: @Model.AllowedRadiusMeters
+            }).addTo(map);
+
+            // Student marker
+            L.marker([@Model.Latitude, @Model.Longitude], {
+                icon: L.divIcon({
+                    className: 'custom-icon',
+                    html: '<div style="background-color:@markerColor; border:2px solid white; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; color:white;"><i class="fas fa-user"></i></div>',
+                    iconSize: [24, 24]
+                })
+            }).addTo(map)
+              .bindPopup("<b>@Model.StudentName</b><br>Status: @status<br>Distance: @distance m");
+        });
+    </script>
+}
+
+@functions {
+    private double CalculateDistance()
+    {
+        const double R = 6371000; // meters
+        double lat = Convert.ToDouble(Model.Latitude);
+        double lon = Convert.ToDouble(Model.Longitude);
+        double allowedLat = Convert.ToDouble(Model.AllowedLatitude);
+        double allowedLon = Convert.ToDouble(Model.AllowedLongitude);
+
+        var dLat = (lat - allowedLat) * Math.PI / 180;
+        var dLon = (lon - allowedLon) * Math.PI / 180;
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(allowedLat * Math.PI / 180) * Math.Cos(lat * Math.PI / 180) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return R * c;
+    }
+}

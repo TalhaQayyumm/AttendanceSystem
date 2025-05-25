@@ -1,0 +1,31 @@
+﻿@using AttendanceSystem.Models
+@model List<Attendance>
+
+
+<h3>Attendance History</h3>
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No attendance records found for this course.</div>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Marked At</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Date.ToShortDateString()</td>
+                    <td>@item.Status</td>
+                    <td>@item.MarkedAt?.ToString("g")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

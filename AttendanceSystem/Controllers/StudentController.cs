@@ -1,15 +1,11 @@
 ﻿using AttendanceSystem.Data;
 using AttendanceSystem.Models;
-using AttendanceSystem.Services;
+using AttendanceSystem.ViewModels;
 using AttendanceSystem.ViewModels.Attendance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AttendanceSystem.Data;
-using AttendanceSystem.Models;
-using AttendanceSystem.Services;
-using AttendanceSystem.ViewModels;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,178 +17,141 @@ namespace AttendanceSystem.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly LocationService _locationService;
 
         public StudentController(
             ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager,
-            LocationService locationService)
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _userManager = userManager;
-            _locationService = locationService;
         }
 
+        // GET: Student/Index
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
             var courses = await _context.UserCourses
                 .Include(uc => uc.Course)
-                .ThenInclude(c => c.Teacher)
                 .Where(uc => uc.UserId == user.Id)
+                .Select(uc => uc.Course)
                 .ToListAsync();
 
             return View(courses);
         }
 
-        [HttpGet]
+        // GET: Student/MarkAttendance/{courseId}
         public async Task<IActionResult> MarkAttendance(int courseId)
         {
-            var user = await _userManager.GetUserAsync(User);
             var course = await _context.Courses.FindAsync(courseId);
-
             if (course == null)
             {
                 return NotFound();
             }
 
-            var isEnrolled = await _context.UserCourses
-                .AnyAsync(uc => uc.UserId == user.Id && uc.CourseId == courseId);
-
-            if (!isEnrolled)
-            {
-                return Forbid();
-            }
-
             var model = new MarkAttendanceViewModel
             {
-                CourseId = courseId,
-                CourseName = course.Name,
-                RequiresLocation = course.AllowedLatitude.HasValue && course.AllowedLongitude.HasValue
+                CourseId = course.CourseId,
+                CourseName = course.Name
             };
 
             return View(model);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> MarkAttendance(MarkAttendanceViewModel model)
+
+        [HttpGet] // Explicitly declare as GET
+        public async Task<IActionResult> ViewLocation(int attendanceId)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
+            var attendance = await _context.Attendances
+                .Include(a => a.Student)
+                .Include(a => a.Course)
+                .FirstOrDefaultAsync(a => a.AttendanceId == attendanceId);
 
-            var user = await _userManager.GetUserAsync(User);
-            var course = await _context.Courses.FindAsync(model.CourseId);
-
-            if (course == null)
+            if (attendance == null || !attendance.Latitude.HasValue)
             {
                 return NotFound();
             }
 
-            var today = DateTime.Today;
-            var existingAttendance = await _context.Attendances
-                .FirstOrDefaultAsync(a => a.StudentId == user.Id &&
-                                        a.CourseId == model.CourseId &&
-                                        a.Date == today);
-
-            if (existingAttendance != null)
+            return View(new AttendanceSystem.ViewModels.Attendance.StudentLocationViewModel
             {
-                ModelState.AddModelError("", "Attendance already marked for today.");
+                StudentName = attendance.Student.FullName,
+                Latitude = attendance.Latitude.Value,
+                Longitude = attendance.Longitude.Value,
+                MarkedAt = attendance.MarkedAt.Value,
+                CourseName = attendance.Course.Name
+            });
+
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarkAttendance(MarkAttendanceViewModel model)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var course = await _context.Courses.FindAsync(model.CourseId);
+
+            if (!ModelState.IsValid || course == null)
+            {
                 return View(model);
             }
 
-            var now = DateTime.Now;
-            var currentTime = now.TimeOfDay;
-            var isWithinTimeWindow = true;
+            var existing = await _context.Attendances
+                .AnyAsync(a => a.StudentId == user.Id &&
+                              a.CourseId == model.CourseId &&
+                              a.Date.Date == DateTime.Today);
 
-            if (course.ClassDay.HasValue && course.ClassStartTime.HasValue && course.ClassEndTime.HasValue)
+            if (existing)
             {
-                var isCorrectDay = now.DayOfWeek == course.ClassDay.Value;
-                var isWithinTime = currentTime >= course.ClassStartTime.Value &&
-                                  currentTime <= course.ClassEndTime.Value;
-
-                isWithinTimeWindow = isCorrectDay && isWithinTime;
-            }
-
-            var isWithinLocation = true;
-            if (course.AllowedLatitude.HasValue && course.AllowedLongitude.HasValue && course.AllowedRadiusMeters.HasValue)
-            {
-                if (model.Latitude == null || model.Longitude == null)
-                {
-                    ModelState.AddModelError("", "Location is required for this course.");
-                    return View(model);
-                }
-
-                isWithinLocation = _locationService.IsWithinAllowedDistance(
-                    model.Latitude.Value, model.Longitude.Value,
-                    course.AllowedLatitude.Value, course.AllowedLongitude.Value,
-                    course.AllowedRadiusMeters.Value);
-            }
-
-            var status = AttendanceStatus.Present;
-            if (!isWithinTimeWindow)
-            {
-                status = AttendanceStatus.Late;
-            }
-            else if (!isWithinLocation)
-            {
-                status = AttendanceStatus.Absent;
+                TempData["ErrorMessage"] = "You've already marked attendance today";
+                return RedirectToAction("Index");
             }
 
             var attendance = new Attendance
             {
                 StudentId = user.Id,
                 CourseId = model.CourseId,
-                Date = today,
+                Date = DateTime.Today,
+                Status = AttendanceStatus.Present,
                 Latitude = model.Latitude,
                 Longitude = model.Longitude,
-                Status = status,
-                MarkedAt = now
+                Accuracy = model.Accuracy, // Make sure this is included
+                MarkedAt = DateTime.Now
             };
 
             _context.Attendances.Add(attendance);
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("AttendanceReport", new { courseId = model.CourseId });
+            TempData["SuccessMessage"] = "Attendance marked successfully!";
+            return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> AttendanceReport(int courseId)
+        // GET: Student/AttendanceHistory
+        public async Task<IActionResult> AttendanceHistory(int courseId)
         {
-            var user = await _userManager.GetUserAsync(User);
-
-            var isEnrolled = await _context.UserCourses
-                .AnyAsync(uc => uc.UserId == user.Id && uc.CourseId == courseId);
-
-            if (!isEnrolled)
-            {
-                return Forbid();
-            }
-
-            var course = await _context.Courses.FindAsync(courseId);
+            var userId = _userManager.GetUserId(User);
             var attendances = await _context.Attendances
-                .Where(a => a.StudentId == user.Id && a.CourseId == courseId)
-                .OrderBy(a => a.Date)
+                .Where(a => a.CourseId == courseId && a.StudentId == userId)
+                .OrderByDescending(a => a.Date)
                 .ToListAsync();
 
-            var totalClasses = attendances.Count;
-            var presentClasses = attendances.Count(a => a.Status == AttendanceStatus.Present || a.Status == AttendanceStatus.Late);
-            var percentage = totalClasses > 0 ? (double)presentClasses / totalClasses * 100 : 0;
-
-            var model = new AttendanceReportViewModel
-            {
-                CourseName = course.Name,
-                Records = attendances.Select(a => new AttendanceRecordViewModel
-                {
-                    Date = a.Date,
-                    Status = a.Status
-                }).ToList(),
-                AttendancePercentage = percentage,
-                IsBelowMinimum = percentage < 75
-            };
-
-            return View(model);
+            return View(attendances);
         }
 
+
+        // Helper method to calculate distance between coordinates
+        private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+        {
+            const double R = 6371e3; // meters
+            var φ1 = lat1 * Math.PI / 180;
+            var φ2 = lat2 * Math.PI / 180;
+            var Δφ = (lat2 - lat1) * Math.PI / 180;
+            var Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            var a = Math.Sin(Δφ / 2) * Math.Sin(Δφ / 2) +
+                    Math.Cos(φ1) * Math.Cos(φ2) *
+                    Math.Sin(Δλ / 2) * Math.Sin(Δλ / 2);
+            var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+
+            return R * c;
+        }
     }
 }

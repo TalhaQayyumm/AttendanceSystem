@@ -1,11 +1,146 @@
 ﻿@model AttendanceSystem.ViewModels.Account.LoginViewModel
 @{
+    Layout = null;
     ViewData["Title"] = "Login";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <h2 class="text-center">Login</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+    <link href="https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap" rel="stylesheet" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #f2f2f2;
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: #fff;
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            text-align: center;
+            color: #2A98FF;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .control-label {
+            font-weight: 500;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .form-check {
+            display: flex;
+            align-items: center;
+        }
+
+        .form-check-input {
+            margin-right: 8px;
+        }
+
+        .form-check-label {
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background-color: #2A98FF;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+
+            .btn-primary:hover {
+                background-color: #237bd9;
+            }
+
+        .text-danger {
+            font-size: 13px;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        a {
+            color: #2A98FF;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+            a:hover {
+                text-decoration: underline;
+            }
+
+        .register-link {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+
+
+        {
+            padding: 20px;
+        }
+
+        h2 {
+            font-size: 20px;
+        }
+
+        .btn-primary {
+            font-size: 14px;
+            padding: 10px;
+        }
+
+        .form-control {
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>Login</h2>
         <form asp-action="Login" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
@@ -27,12 +162,13 @@
             </div>
 
             <div class="form-group">
-                <button type="submit" class="btn btn-primary btn-block">Login</button>
+                <button type="submit" class="btn btn-primary">Login</button>
             </div>
         </form>
 
-        <div class="text-center">
+        <div class="text-center register-link">
             <p>Don't have an account? <a asp-action="Register">Register here</a></p>
         </div>
     </div>
-</div>
+</body>
+</html>

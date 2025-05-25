@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using AttendanceSystem.Data;
 using AttendanceSystem.Models;
+using AttendanceSystem.ViewModels.Attendance;
+
 
 namespace AttendanceSystem.Controllers
 {

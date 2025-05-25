@@ -1,0 +1,24 @@
+﻿@{
+    ViewData["Title"] = "Search Student Locations";
+}
+
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-search"></i> Search Student Locations
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="ViewStudentLocation">
+                <div class="input-group mb-3">
+                    <input type="text" name="searchString" class="form-control"
+                           placeholder="Search by student name or course...">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

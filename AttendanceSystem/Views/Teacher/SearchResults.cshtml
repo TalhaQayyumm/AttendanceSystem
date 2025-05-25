@@ -1,0 +1,61 @@
+﻿@model List<AttendanceSystem.ViewModels.Attendance.AttendanceLocationViewModel>
+
+@{
+    ViewData["Title"] = "Search Results";
+}
+
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-map-marker-alt"></i> Search Results
+            </h6>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Course</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>@item.StudentName</td>
+                                    <td>@item.CourseName</td>
+                                    <td>@item.MarkedAt.ToString("d")</td>
+                                    <td>
+                                        <span class="badge @(item.Status == AttendanceStatus.Present ? "bg-success" :
+                                                      item.Status == AttendanceStatus.Late ? "bg-warning" : "bg-danger")">
+                                            @item.Status
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="@Url.Action("ViewStudentLocation", new { attendanceId = item.AttendanceId })"
+                                           class="btn btn-sm btn-info">
+                                            <i class="fas fa-map-marker-alt"></i> View Location
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    No matching records found.
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -15,6 +15,9 @@ using AttendanceSystem.ViewModels.Admin;
 using AttendanceSystem.ViewModels.Courses;
 using AttendanceSystem.ViewModels.Attendance;
 using AttendanceSystem.ViewModels.Admin;
+using AttendanceSystem.ViewModels.Attendance;
+using Course = AttendanceSystem.Models.Course;
+
 
 namespace AttendanceSystem.Controllers
 {
@@ -275,8 +278,8 @@ namespace AttendanceSystem.Controllers
                 }
 
                 // First remove all related records
-                _context.UserCourses.RemoveRange(course.UserCourses);
-                _context.Attendances.RemoveRange(course.Attendances);
+                _context.UserCourses.RemoveRange(entities: course.UserCourses);
+                _context.Attendances.RemoveRange((Attendance)course.Attendances);
 
                 // Then remove the course
                 _context.Courses.Remove(course);

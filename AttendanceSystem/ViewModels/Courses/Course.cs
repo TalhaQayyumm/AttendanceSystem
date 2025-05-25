@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using AttendanceSystem.ViewModels;
-
-namespace AttendanceSystem.Models
+﻿
+namespace AttendanceSystem.ViewModels.Courses
 {
-    public class Course
+    internal class Course
     {
         public int CourseId { get; set; }
         public string Name { get; set; }
@@ -16,9 +13,5 @@ namespace AttendanceSystem.Models
         public TimeSpan? ClassEndTime { get; set; }
         public DayOfWeek? ClassDay { get; set; }
         public string TeacherId { get; set; }
-        public ApplicationUser Teacher { get; set; }
-        public virtual ICollection<UserCourse> UserCourses { get; set; }
-        public virtual ICollection<Attendance> Attendances { get; set; }
-        public List<StudentAttendanceReport> StudentReports { get; internal set; }
     }
 }
