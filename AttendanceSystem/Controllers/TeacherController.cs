@@ -64,10 +64,10 @@ namespace AttendanceSystem.Controllers
             {
                 AttendanceId = a.AttendanceId,
                 StudentName = a.Student.FullName,
-                Latitude = a.Latitude.Value,
-                Longitude = a.Longitude.Value,
+                Latitude = a.Latitude ?? 0, // Safe fallback
+                Longitude = a.Longitude ?? 0, // Safe fallback
                 Status = a.Status,
-                MarkedAt = a.MarkedAt.Value,
+                MarkedAt = a.MarkedAt ?? DateTime.MinValue, // Safe fallback
                 AllowedLatitude = course.AllowedLatitude.Value,
                 AllowedLongitude = course.AllowedLongitude.Value,
                 AllowedRadiusMeters = course.AllowedRadiusMeters ?? 100
@@ -80,6 +80,7 @@ namespace AttendanceSystem.Controllers
 
             return View(model);
         }
+
 
         public async Task<IActionResult> Index()
         {
@@ -96,12 +97,11 @@ namespace AttendanceSystem.Controllers
         {
             var teacherId = _userManager.GetUserId(User);
 
-            var model = new ViewModels.Teacher.TeacherReportsViewModel
+            var model = new AttendanceSystem.ViewModels.Teacher.TeacherReportsViewModel
             {
                 Courses = await _context.Courses
                     .Where(c => c.TeacherId == teacherId)
-                    .Include(c => c.Attendances)
-                    .Select(c => new ViewModels.Course
+                    .Select(c => new AttendanceSystem.ViewModels.Course
                     {
                         CourseId = c.CourseId,
                         Name = c.Name
@@ -109,9 +109,10 @@ namespace AttendanceSystem.Controllers
                     .ToListAsync(),
 
                 AttendanceStats = await _context.Attendances
-                    .Where(a => a.Course.TeacherId == teacherId)
+                    .Include(a => a.Course)
+                    .Where(a => a.Course != null && a.Course.TeacherId == teacherId)
                     .GroupBy(a => a.Status)
-                    .Select(g => new ViewModels.Teacher.AttendanceStatViewModel
+                    .Select(g => new AttendanceSystem.ViewModels.Teacher.AttendanceStatViewModel
                     {
                         Status = g.Key,
                         Count = g.Count()
@@ -119,8 +120,92 @@ namespace AttendanceSystem.Controllers
                     .ToListAsync()
             };
 
-            return View(model);
+            return View(model); // <-- This line returns the model to the view
         }
+
+        //    [Authorize(Roles = "Teacher")]
+        //    public async Task<IActionResult> Reports()
+        //    {
+        //        var teacherId = _userManager.GetUserId(User);
+
+        //        // Get attendance stats grouped by status
+        //        var attendanceStats = await _context.Attendances
+        //            .Where(a => a.Course.TeacherId == teacherId)
+        //            .GroupBy(a => a.Status)
+        //            .Select(g => new AttendanceStatViewModel
+        //            {
+        //                Status = g.Key,
+        //                Count = g.Count()
+        //            })
+        //            .ToListAsync();
+
+        //        // Ensure all statuses are represented (even with 0 counts)
+        //        var allStatuses = Enum.GetValues(typeof(AttendanceStatus)).Cast<AttendanceStatus>();
+        //        foreach (var status in allStatuses)
+        //        {
+        //            if (!attendanceStats.Any(s => s.Status == status))
+        //            {
+        //                attendanceStats.Add(new AttendanceStatViewModel
+        //                {
+        //                    Status = status,
+        //                    Count = 0
+        //                });
+        //            }
+        //        }
+
+        //        var model = new TeacherReportsViewModel
+        //        {
+        //            Courses = await _context.Courses
+        //.Where(c => c.TeacherId == teacherId)
+        //.Select(c => new AttendanceSystem.ViewModels.Course
+        //{
+        //    CourseId = c.CourseId,
+        //    Name = c.Name
+        //})
+        //.ToListAsync(),
+
+        //            AttendanceStats = attendanceStats
+        //        };
+
+        //        return View(model);
+        //    }
+
+        //[Authorize(Roles = "Teacher")]
+        //public async Task<IActionResult> Reports()
+        //{
+        //    var teacherId = _userManager.GetUserId(User);
+        //    if (string.IsNullOrEmpty(teacherId))
+        //    {
+        //        TempData["ErrorMessage"] = "Unable to determine teacher identity.";
+        //        return RedirectToAction("Index");
+        //    }
+
+        //    var model = new ViewModels.Teacher.TeacherReportsViewModel
+        //    {
+        //        Courses = await _context.Courses
+        //            .Where(c => c.TeacherId == teacherId)
+        //            .Include(c => c.Attendances)
+        //            .Select(c => new ViewModels.Course
+        //            {
+        //                CourseId = c.CourseId,
+        //                Name = c.Name
+        //            })
+        //            .ToListAsync(),
+
+        //        AttendanceStats = await _context.Attendances
+        //            .Where(a => a.Course != null && a.Course.TeacherId == teacherId)
+        //            .GroupBy(a => a.Status)
+        //            .Select(g => new ViewModels.Teacher.AttendanceStatViewModel
+        //            {
+        //                Status = g.Key,
+        //                Count = g.Count()
+        //            })
+        //            .ToListAsync()
+        //    };
+
+        //    return View(model);
+        //}
+
 
 
         [Authorize(Roles = "Teacher")]
@@ -252,23 +337,32 @@ namespace AttendanceSystem.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Teacher")]
-        public async Task<IActionResult> UpdateAttendanceStatus(int attendanceId, AttendanceStatus status)
+        public async Task<IActionResult> UpdateAttendanceStatus(int attendanceId, string status)
         {
+            if (!Enum.TryParse<AttendanceStatus>(status, out var statusEnum))
+            {
+                TempData["ErrorMessage"] = "Invalid attendance status";
+                return RedirectToAction("Index"); // Redirect to a safe fallback action
+            }
+
             var attendance = await _context.Attendances
                 .Include(a => a.Course)
                 .FirstOrDefaultAsync(a => a.AttendanceId == attendanceId);
 
-            if (attendance == null) return NotFound();
+            if (attendance == null)
+            {
+                TempData["ErrorMessage"] = "Attendance record not found";
+                return RedirectToAction("Index"); // Redirect to a safe fallback action
+            }
 
-            // Verify the teacher owns this course
+            // Verify teacher owns the course
             var teacherId = _userManager.GetUserId(User);
             if (attendance.Course.TeacherId != teacherId)
                 return Forbid();
 
-            attendance.Status = status;
+            attendance.Status = statusEnum;
 
-            // Update marked time if changing to Present/Late
-            if ((status == AttendanceStatus.Present || status == AttendanceStatus.Late) &&
+            if ((statusEnum == AttendanceStatus.Present || statusEnum == AttendanceStatus.Late) &&
                 !attendance.MarkedAt.HasValue)
             {
                 attendance.MarkedAt = DateTime.Now;
@@ -277,8 +371,9 @@ namespace AttendanceSystem.Controllers
             _context.Update(attendance);
             await _context.SaveChangesAsync();
 
-            TempData["StatusMessage"] = $"Attendance status updated to {status}";
+            TempData["StatusMessage"] = $"Attendance status updated to {statusEnum}";
             return RedirectToAction("CourseDetails", new { id = attendance.CourseId });
         }
+
     }
 }

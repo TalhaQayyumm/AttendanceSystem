@@ -12,6 +12,7 @@
             </h6>
             <div>
                 <form method="get" class="form-inline">
+                    <input type="hidden" name="courseId" value="@ViewBag.CourseId" />
                     <div class="input-group">
                         <input type="date" name="date" value="@ViewBag.SelectedDate" class="form-control">
                         <button type="submit" class="btn btn-primary">
@@ -78,7 +79,7 @@
 </div>
 
 @functions {
-    private double CalculateDistance(AttendanceLocationViewModel item)
+    private double CalculateDistance(AttendanceSystem.ViewModels.Attendance.AttendanceLocationViewModel item)
     {
         const double R = 6371000; // meters
         double lat = item.Latitude;

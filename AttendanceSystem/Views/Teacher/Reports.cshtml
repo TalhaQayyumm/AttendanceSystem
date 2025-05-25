@@ -15,7 +15,14 @@
                     <h5>Attendance Statistics</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="attendanceChart" height="250"></canvas>
+                    @if (Model.AttendanceStats != null && Model.AttendanceStats.Any())
+                    {
+                        <canvas id="attendanceChart" height="250"></canvas>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">No attendance data available</div>
+                    }
                 </div>
             </div>
         </div>
@@ -96,3 +103,62 @@
         });
     </script>
 }
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+        @if (Model.AttendanceStats != null && Model.AttendanceStats.Any())
+        {
+            var present = @Model.AttendanceStats.FirstOrDefault(s => s.Status == AttendanceStatus.Present)?.Count ?? 0;
+            var late = @Model.AttendanceStats.FirstOrDefault(s => s.Status == AttendanceStatus.Late)?.Count ?? 0;
+            var absent = @Model.AttendanceStats.FirstOrDefault(s => s.Status == AttendanceStatus.Absent)?.Count ?? 0;
+            var excused = @Model.AttendanceStats.FirstOrDefault(s => s.Status == AttendanceStatus.Excused)?.Count ?? 0;
+            <text>
+                    const ctx = document.getElementById('attendanceChart').getContext('2d');
+                    const statusOrder = ['Present', 'Late', 'Absent', 'Excused'];
+                    const backgroundColors = [
+                        '#28a745', // Present
+                        '#ffc107', // Late
+                        '#dc3545', // Absent
+                        '#17a2b8'  // Excused
+                    ];
+                    const counts = [@present, @late, @absent, @excused];
+
+                    new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: statusOrder,
+                            datasets: [{
+                                data: counts,
+                                backgroundColor: backgroundColors,
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.raw || 0;
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                            return `${label}: ${value} (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+            </text>
+        }
+        });
+    </script>
+}
+}
+
