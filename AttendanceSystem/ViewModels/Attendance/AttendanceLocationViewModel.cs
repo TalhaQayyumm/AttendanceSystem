@@ -15,5 +15,6 @@ namespace AttendanceSystem.ViewModels.Attendance
         public double AllowedLongitude { get; set; }
         public double AllowedRadiusMeters { get; set; }
         public string CourseName { get; internal set; }
+        public double DistanceFromAllowedLocation { get; internal set; }
     }
 }
