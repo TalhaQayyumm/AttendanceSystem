@@ -1,4 +1,4 @@
-﻿@model AttendanceSystem.ViewModels.Attendance.MarkAttendanceViewModel
+﻿ @model AttendanceSystem.ViewModels.Attendance.MarkAttendanceViewModel
 
 @{
     ViewData["Title"] = "Mark Attendance";
@@ -49,16 +49,7 @@
                 <input type="hidden" asp-for="Longitude" id="longitude" />
                 <input type="hidden" asp-for="Accuracy" id="accuracy" />
 
-                <div class="form-group">
-                    <button type="submit" class="btn btn-success btn-lg btn-block" id="submitBtn" disabled>
-                        <i class="fas fa-check-circle"></i> Submit Attendance
-                    </button>
-                </div>
-                <div class="form-group">
-                    <button type="button" class="btn btn-primary btn-lg btn-block" id="markNowBtn">
-                        <i class="fas fa-location-arrow"></i> Mark Attendance Now
-                    </button>
-                </div>
+
             </form>
 
         </div>
