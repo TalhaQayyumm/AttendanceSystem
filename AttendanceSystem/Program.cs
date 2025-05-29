@@ -1,3 +1,4 @@
+
 using AttendanceSystem.Data;
 using AttendanceSystem.Models;
 using AttendanceSystem.Services;
@@ -106,40 +107,80 @@ app.Run();
 
 
 
-namespace AttendanceSystem.Data
+public static class SeedData
 {
-    public static class SeedData
+    public static async Task Initialize(
+        UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole> roleManager)
     {
-        public static async Task Initialize(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+        // Seed roles
+        string[] roleNames = { "Admin", "Teacher", "Student" };
+
+        foreach (var roleName in roleNames)
         {
-            string[] roleNames = { "Admin", "Teacher", "Student" };
-
-            foreach (var roleName in roleNames)
+            if (!await roleManager.RoleExistsAsync(roleName))
             {
-                if (!await roleManager.RoleExistsAsync(roleName))
-                {
-                    await roleManager.CreateAsync(new IdentityRole(roleName));
-                }
+                await roleManager.CreateAsync(new IdentityRole(roleName));
             }
+        }
 
-            // Create a default admin user
-            var adminEmail = "admin@example.com";
-            var adminUser = await userManager.FindByEmailAsync(adminEmail);
-            if (adminUser == null)
+        // Seed admin user
+        string adminEmail = "admin@school.com";
+        string adminPassword = "Admin@123";
+
+        if (await userManager.FindByEmailAsync(adminEmail) == null)
+        {
+            var adminUser = new ApplicationUser
             {
-                var user = new ApplicationUser
-                {
-                    UserName = "admin",
-                    Email = adminEmail,
-                    EmailConfirmed = true
-                };
+                UserName = adminEmail,
+                Email = adminEmail,
+                FullName = "Administrator"
+            };
 
-                var result = await userManager.CreateAsync(user, "Admin123!");
+            var createAdmin = await userManager.CreateAsync(adminUser, adminPassword);
+            if (createAdmin.Succeeded)
+            {
+                await userManager.AddToRoleAsync(adminUser, "Admin");
+            }
+        }
 
-                if (result.Succeeded)
-                {
-                    await userManager.AddToRoleAsync(user, "Admin");
-                }
+        // Seed sample teacher
+        string teacherEmail = "teacher@school.com";
+        string teacherPassword = "Teacher@123";
+
+        if (await userManager.FindByEmailAsync(teacherEmail) == null)
+        {
+            var teacherUser = new ApplicationUser
+            {
+                UserName = teacherEmail,
+                Email = teacherEmail,
+                FullName = "Sample Teacher"
+            };
+
+            var createTeacher = await userManager.CreateAsync(teacherUser, teacherPassword);
+            if (createTeacher.Succeeded)
+            {
+                await userManager.AddToRoleAsync(teacherUser, "Teacher");
+            }
+        }
+
+        // Seed sample student
+        string studentEmail = "student@school.com";
+        string studentPassword = "Student@123";
+
+        if (await userManager.FindByEmailAsync(studentEmail) == null)
+        {
+            var studentUser = new ApplicationUser
+            {
+                UserName = studentEmail,
+                Email = studentEmail,
+                FullName = "Sample Student"
+            };
+
+            var createStudent = await userManager.CreateAsync(studentUser, studentPassword);
+            if (createStudent.Succeeded)
+            {
+                await userManager.AddToRoleAsync(studentUser, "Student");
             }
         }
     }
