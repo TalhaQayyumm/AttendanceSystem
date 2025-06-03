@@ -35,5 +35,8 @@ namespace AttendanceSystem.ViewModels.Courses
         public TimeSpan? EndTime { get; set; }
 
         public DayOfWeek? DayOfWeek { get; set; }
+
+        public int? Id { get; set; }
+
     }
 }

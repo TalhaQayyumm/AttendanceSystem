@@ -1,51 +1,120 @@
 ﻿@model List<AttendanceSystem.Models.Course>
+@using System.Globalization
+
+@functions {
+    // Returns true if the course is currently active (today is the class day and current time is within the class time)
+    bool IsCourseActive(AttendanceSystem.Models.Course course)
+    {
+        if (course.ClassDay == null || course.ClassStartTime == null || course.ClassEndTime == null)
+            return false;
+
+        // Compare DayOfWeek directly
+        var today = DateTime.Now.DayOfWeek;
+        if (course.ClassDay.Value != today)
+            return false;
+
+        var now = DateTime.Now.TimeOfDay;
+        return now >= course.ClassStartTime && now <= course.ClassEndTime;
+    }
+}
+
 
 @{
     ViewData["Title"] = "My Courses";
-    Layout = "~/Views/Shared/_Layout.cshtml"; // Adjust path if your layout is in another folder
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container mt-5 pt-5">
-    <h2>My Courses</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary">My Courses</h2>
+    </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success">
+        <div class="alert alert-success alert-dismissible fade show">
             @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger">
+        <div class="alert alert-danger alert-dismissible fade show">
             @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <div class="row">
-        @foreach (var course in Model)
-        {
-            <div class="col-md-4 mb-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">@course.Name</h5>
-                        <p class="card-text">@course.Description</p>
-                        <p class="card-text">
-                            <small class="text-muted">
-                                @course.ClassDay @course.ClassStartTime?.ToString("hh\\:mm")-@course.ClassEndTime?.ToString("hh\\:mm")
-                            </small>
-                        </p>
-                        <a asp-action="MarkAttendance" asp-route-courseId="@course.CourseId"
-                           class="btn btn-primary">
-                            Mark Attendance
-                        </a>
-                        <a asp-action="AttendanceHistory" asp-route-courseId="@course.CourseId"
-                           class="btn btn-outline-secondary">
-                            View History
-                        </a>
+    @if (Model.Any())
+    {
+        <div class="row g-4">
+            @foreach (var course in Model)
+            {
+                var isActive = IsCourseActive(course);
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-3">
+                                <h5 class="card-title text-truncate">@course.Name</h5>
+                                <p class="card-text text-muted">@course.Description</p>
+                                <div class="d-flex align-items-center text-muted mb-2">
+                                    <i class="bi bi-calendar-week me-2"></i>
+                                    <span>@course.ClassDay</span>
+                                </div>
+                                <div class="d-flex align-items-center text-muted">
+                                    <i class="bi bi-clock me-2"></i>
+                                    <span>@course.ClassStartTime?.ToString("hh\\:mm") - @course.ClassEndTime?.ToString("hh\\:mm")</span>
+                                </div>
+                            </div>
+                            <div class="mt-auto d-grid gap-2">
+                                <a asp-action="MarkAttendance" asp-route-courseId="@course.CourseId"
+                                   class="btn btn-primary btn-sm @(isActive ? "" : "disabled")"
+                                   title="@(isActive ? "" : "Attendance can only be marked during the scheduled class time.")"
+                                   tabindex="@(isActive ? "0" : "-1")"
+                                   aria-disabled="@(isActive ? "false" : "true")">
+                                    <i class="bi bi-check-circle me-1"></i> Mark Attendance
+                                </a>
+                                <a asp-action="AttendanceHistory" asp-route-courseId="@course.CourseId"
+                                   class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-clock-history me-1"></i> View History
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <div class="py-5">
+                <i class="bi bi-book text-muted" style="font-size: 5rem;"></i>
+                <h4 class="mt-3">No courses found</h4>
+                <p class="text-muted">You don't have any courses assigned yet.</p>
             </div>
-        }
-    </div>
+        </div>
+    }
 </div>
+
+<style>
+    .card {
+        transition: transform 0.2s ease-in-out;
+        border-radius: 0.5rem;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+    .card-title {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+</style>

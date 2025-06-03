@@ -47,9 +47,9 @@
                     <td>@course.Teacher?.FullName</td>
                     <td>@course.Description</td>
                     <td>
+                        <a asp-action="EditCourse" asp-route-id="@course.CourseId" class="btn btn-sm btn-warning">Edit</a>
                         <a asp-action="EnrollStudents" asp-route-courseId="@course.CourseId"
                            class="btn btn-sm btn-info">Enroll Students</a>
-
                         <form asp-action="DeleteCourse" method="post" class="d-inline">
                             <input type="hidden" name="id" value="@course.CourseId" />
                             <button type="submit" class="btn btn-sm btn-danger"

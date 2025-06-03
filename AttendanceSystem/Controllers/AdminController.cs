@@ -259,10 +259,6 @@ namespace AttendanceSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        
-        [Authorize(Roles = "Admin")]
-
-        [HttpPost]
         public async Task<IActionResult> DeleteCourse(int id)
         {
             try
@@ -278,8 +274,8 @@ namespace AttendanceSystem.Controllers
                 }
 
                 // First remove all related records
-                _context.UserCourses.RemoveRange(entities: course.UserCourses);
-                _context.Attendances.RemoveRange((Attendance)course.Attendances);
+                _context.UserCourses.RemoveRange(course.UserCourses);
+                _context.Attendances.RemoveRange(course.Attendances);
 
                 // Then remove the course
                 _context.Courses.Remove(course);
@@ -355,6 +351,57 @@ namespace AttendanceSystem.Controllers
                 return View(model);
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> EditCourse(int id)
+        {
+            var course = await _context.Courses.FindAsync(id);
+            if (course == null) return NotFound();
+
+            var viewModel = new CourseFormViewModel
+            {
+                Id = course.CourseId,
+                Name = course.Name,
+                Description = course.Description,
+                TeacherId = course.TeacherId,
+                Teachers = (await _userManager.GetUsersInRoleAsync("Teacher")).ToList(),
+                DayOfWeek = course.ClassDay,
+                StartTime = course.ClassStartTime,
+                EndTime = course.ClassEndTime,
+                Latitude = course.AllowedLatitude,
+                Longitude = course.AllowedLongitude,
+                RadiusMeters = course.AllowedRadiusMeters.HasValue ? (int?)course.AllowedRadiusMeters.Value : null
+            };
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditCourse(CourseFormViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                model.Teachers = (await _userManager.GetUsersInRoleAsync("Teacher")).ToList();
+                return View(model);
+            }
+            var course = await _context.Courses.FindAsync(model.Id);
+            if (course == null) return NotFound();
+
+            course.Name = model.Name;
+            course.Description = model.Description;
+            course.TeacherId = model.TeacherId;
+            course.ClassDay = model.DayOfWeek;
+            course.ClassStartTime = model.StartTime;
+            course.ClassEndTime = model.EndTime;
+            course.AllowedLatitude = model.Latitude;
+            course.AllowedLongitude = model.Longitude;
+            course.AllowedRadiusMeters = model.RadiusMeters.HasValue ? (double?)model.RadiusMeters.Value : null;
+
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Course updated successfully";
+            return RedirectToAction("ManageCourses");
+        }
+
 
         [HttpGet]
         public async Task<IActionResult> EnrollStudents(int courseId)

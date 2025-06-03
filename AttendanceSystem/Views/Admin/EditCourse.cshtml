@@ -1,0 +1,183 @@
+﻿@model AttendanceSystem.ViewModels.Courses.CourseFormViewModel
+@{
+    ViewData["Title"] = "Edit Course";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"] - Attendance Management System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f4f8fb;
+        }
+
+        .course-form-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 30px 25px;
+            border-radius: 12px;
+            box-shadow: 0px 12px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        h2 {
+            text-align: center;
+            color: #2A98FF;
+            margin-bottom: 25px;
+        }
+
+        label {
+            font-weight: 500;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: #2A98FF;
+            color: #fff;
+            margin-right: 10px;
+        }
+
+            .btn-primary:hover {
+                background-color: #247fd4;
+            }
+
+        .btn-secondary {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+
+            .btn-secondary:hover {
+                background-color: #cacaca;
+            }
+
+        .text-danger {
+            color: #dc3545;
+            font-size: 13px;
+        }
+
+        #map {
+            height: 300px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="course-form-container">
+        <h2>Edit Course</h2>
+        <form asp-action="EditCourse" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <label asp-for="Name"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Description"></label>
+                <textarea asp-for="Description" class="form-control"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="TeacherId"></label>
+                <select asp-for="TeacherId" class="form-control">
+                    <option value="">-- Select Teacher --</option>
+                    @foreach (var teacher in Model.Teachers)
+                    {
+                        <option value="@teacher.Id">@teacher.FullName</option>
+                    }
+                </select>
+                <span asp-validation-for="TeacherId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DayOfWeek"></label>
+                <select asp-for="DayOfWeek" class="form-control" asp-items="Html.GetEnumSelectList<DayOfWeek>()">
+                    <option value="">-- Select Day --</option>
+                </select>
+                <span asp-validation-for="DayOfWeek" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="StartTime"></label>
+                <input asp-for="StartTime" type="time" class="form-control" />
+                <span asp-validation-for="StartTime" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="EndTime"></label>
+                <input asp-for="EndTime" type="time" class="form-control" />
+                <span asp-validation-for="EndTime" class="text-danger"></span>
+            </div>
+            <div id="map"></div>
+            <div class="form-group">
+                <label asp-for="Latitude"></label>
+                <input asp-for="Latitude" class="form-control" id="Latitude" />
+                <span asp-validation-for="Latitude" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Longitude"></label>
+                <input asp-for="Longitude" class="form-control" id="Longitude" />
+                <span asp-validation-for="Longitude" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="RadiusMeters"></label>
+                <input asp-for="RadiusMeters" class="form-control" />
+                <span asp-validation-for="RadiusMeters" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a asp-action="ManageCourses" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var defaultLat = parseFloat(document.getElementById("Latitude").value) || 0;
+            var defaultLng = parseFloat(document.getElementById("Longitude").value) || 0;
+            var latInput = document.getElementById("Latitude");
+            var lngInput = document.getElementById("Longitude");
+            var map = L.map('map').setView([defaultLat, defaultLng], (defaultLat !== 0 || defaultLng !== 0) ? 13 : 2);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+            var marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
+            marker.on('move', function (e) {
+                latInput.value = e.latlng.lat.toFixed(6);
+                lngInput.value = e.latlng.lng.toFixed(6);
+            });
+            map.on('click', function (e) {
+                marker.setLatLng(e.latlng);
+                latInput.value = e.latlng.lat.toFixed(6);
+                lngInput.value = e.latlng.lng.toFixed(6);
+            });
+        });
+    </script>
+</body>
+</html>
